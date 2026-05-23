@@ -4,7 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
-import { Download, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Plus, Trash2, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import {
   fetchMetrics, fetchActivities, fetchExpenses, fetchNotes, fetchRemarks,
   upsertMetric, upsertActivity, addExpense, deleteExpense,
@@ -14,6 +14,7 @@ import './App.css';
 
 const TODAY = new Date().toISOString().split('T')[0];
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function toDecimalHours(hrs, mins) {
   return parseFloat(hrs || 0) + parseFloat(mins || 0) / 60;
 }
@@ -49,27 +50,21 @@ function weeklyAvg(entries, field) {
   return recent.reduce((s, e) => s + parseFloat(e[field]), 0) / recent.length;
 }
 
-// Custom dot for line charts
+function formatAmount(amount, currency, rate) {
+  const abs = Math.abs(amount);
+  if (currency === 'USD') {
+    const usd = abs / rate;
+    return `$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  return `₹${abs.toLocaleString('en-IN')}`;
+}
+
+// ── Custom line dot ───────────────────────────────────────────────────────────
 const LineDot = ({ cx, cy, fill }) => (
-  <circle cx={cx} cy={cy} r={3.5} fill={fill} stroke="#111" strokeWidth={1.5} />
+  <circle cx={cx} cy={cy} r={3.5} fill={fill} stroke="var(--bg)" strokeWidth={1.5} />
 );
 
-// Custom donut center label
-const DonutLabel = ({ viewBox, rate }) => {
-  const { cx, cy } = viewBox;
-  return (
-    <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle">
-      <tspan x={cx} dy="-0.2em" fontSize="22" fontWeight="600" fill="#5a9e6f" fontFamily="JetBrains Mono, monospace">
-        {rate}%
-      </tspan>
-      <tspan x={cx} dy="1.4em" fontSize="11" fill="#666" fontFamily="Inter, sans-serif">
-        satisfactory
-      </tspan>
-    </text>
-  );
-};
-
-// Calendar
+// ── Calendar ──────────────────────────────────────────────────────────────────
 function CalendarView({ title, markedDates, color }) {
   const [viewDate, setViewDate] = useState(new Date());
   const year = viewDate.getFullYear();
@@ -80,7 +75,6 @@ function CalendarView({ title, markedDates, color }) {
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
   return (
     <div className="cal-widget">
       <div className="cal-header">
@@ -92,14 +86,14 @@ function CalendarView({ title, markedDates, color }) {
         </div>
       </div>
       <div className="cal-grid">
-        {['S','M','T','W','T','F','S'].map((d, i) => <div key={i} className="cal-dow">{d}</div>)}
+        {['S','M','T','W','T','F','S'].map((d,i) => <div key={i} className="cal-dow">{d}</div>)}
         {cells.map((day, i) => {
-          const dateStr = day ? `${monthStr}-${String(day).padStart(2, '0')}` : null;
+          const dateStr = day ? `${monthStr}-${String(day).padStart(2,'0')}` : null;
           const marked = dateStr && markedDates.includes(dateStr);
           return (
             <div key={i}
-              className={`cal-cell ${day ? 'cal-has-day' : ''} ${marked ? 'cal-marked' : ''}`}
-              style={marked ? { background: color, color: '#111', borderRadius: 6 } : {}}
+              className={`cal-cell ${day?'cal-has-day':''} ${marked?'cal-marked':''}`}
+              style={marked ? { background:color, color:'#111', borderRadius:6 } : {}}
             >{day}</div>
           );
         })}
@@ -108,6 +102,7 @@ function CalendarView({ title, markedDates, color }) {
   );
 }
 
+// ── Charts ────────────────────────────────────────────────────────────────────
 function BarMetricChart({ title, data, color, formatTick }) {
   if (!data?.length) return (
     <div className="chart-box"><div className="chart-box-title">{title}</div><div className="empty-state">No data yet</div></div>
@@ -117,10 +112,10 @@ function BarMetricChart({ title, data, color, formatTick }) {
       <div className="chart-box-title">{title}</div>
       <ResponsiveContainer width="100%" height={190}>
         <BarChart data={data.slice(-60)} margin={{ top:4, right:8, left:-20, bottom:0 }}>
-          <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-          <XAxis dataKey="date" stroke="rgba(255,255,255,0.15)" tick={{ fontSize:10, fill:'#666', fontFamily:'Inter' }} tickFormatter={d => d.slice(5)} interval="preserveStartEnd" />
-          <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fontSize:10, fill:'#666', fontFamily:'Inter' }} tickFormatter={formatTick} />
-          <Tooltip contentStyle={{ background:'#1a1a1a', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, fontSize:12, fontFamily:'Inter' }} labelStyle={{ color:'#999' }} formatter={v => [formatTick ? formatTick(v) : v, '']} />
+          <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
+          <XAxis dataKey="date" stroke="var(--chart-axis)" tick={{ fontSize:10, fill:'var(--chart-tick)', fontFamily:'Inter' }} tickFormatter={d=>d.slice(5)} interval="preserveStartEnd" />
+          <YAxis stroke="var(--chart-axis)" tick={{ fontSize:10, fill:'var(--chart-tick)', fontFamily:'Inter' }} tickFormatter={formatTick} />
+          <Tooltip contentStyle={{ background:'var(--tooltip-bg)', border:'1px solid var(--border)', borderRadius:8, fontSize:12, fontFamily:'Inter' }} labelStyle={{ color:'var(--text-sub)' }} formatter={v=>[formatTick?formatTick(v):v,'']} />
           <Bar dataKey="value" fill={color} radius={[4,4,0,0]} maxBarSize={22} />
         </BarChart>
       </ResponsiveContainer>
@@ -137,10 +132,10 @@ function LineMetricChart({ title, data, color, formatTick, unit }) {
       <div className="chart-box-title">{title}</div>
       <ResponsiveContainer width="100%" height={190}>
         <LineChart data={data.slice(-60)} margin={{ top:8, right:12, left:-20, bottom:0 }}>
-          <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-          <XAxis dataKey="date" stroke="rgba(255,255,255,0.15)" tick={{ fontSize:10, fill:'#666', fontFamily:'Inter' }} tickFormatter={d => d.slice(5)} interval="preserveStartEnd" />
-          <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fontSize:10, fill:'#666', fontFamily:'Inter' }} tickFormatter={formatTick} domain={['auto','auto']} />
-          <Tooltip contentStyle={{ background:'#1a1a1a', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, fontSize:12, fontFamily:'Inter' }} labelStyle={{ color:'#999' }} formatter={v => [formatTick ? formatTick(v) : `${v}${unit ? ' '+unit : ''}`, '']} />
+          <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
+          <XAxis dataKey="date" stroke="var(--chart-axis)" tick={{ fontSize:10, fill:'var(--chart-tick)', fontFamily:'Inter' }} tickFormatter={d=>d.slice(5)} interval="preserveStartEnd" />
+          <YAxis stroke="var(--chart-axis)" tick={{ fontSize:10, fill:'var(--chart-tick)', fontFamily:'Inter' }} tickFormatter={formatTick} domain={['auto','auto']} />
+          <Tooltip contentStyle={{ background:'var(--tooltip-bg)', border:'1px solid var(--border)', borderRadius:8, fontSize:12, fontFamily:'Inter' }} labelStyle={{ color:'var(--text-sub)' }} formatter={v=>[formatTick?formatTick(v):`${v}${unit?' '+unit:''}`,'']} />
           <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={<LineDot fill={color} />} activeDot={{ r:5, fill:color }} />
         </LineChart>
       </ResponsiveContainer>
@@ -148,9 +143,32 @@ function LineMetricChart({ title, data, color, formatTick, unit }) {
   );
 }
 
+// ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
+  // Theme
+  const [theme, setTheme] = useState(() => localStorage.getItem('dashboard-theme') || 'dark');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('dashboard-theme', theme);
+  }, [theme]);
+
+  // Conversion rate (₹ per $1 USD)
+  const [convRate, setConvRate] = useState(() => parseFloat(localStorage.getItem('dashboard-conv-rate') || '83.5'));
+  const [convInput, setConvInput] = useState(() => localStorage.getItem('dashboard-conv-rate') || '83.5');
+
+  const saveConvRate = () => {
+    const val = parseFloat(convInput);
+    if (!isNaN(val) && val > 0) {
+      setConvRate(val);
+      localStorage.setItem('dashboard-conv-rate', String(val));
+    }
+  };
+
+  // Tabs
   const [sideTab, setSideTab] = useState('dashboard');
   const [analyticsTab, setAnalyticsTab] = useState('graphs');
+
+  // Data
   const [metrics, setMetrics] = useState([]);
   const [activities, setActivities] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -158,6 +176,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // Today's form
   const [todayMetric, setTodayMetric] = useState({ weight:'', work_h:'', work_m:'', sleep_h:'', sleep_m:'', study_h:'', study_m:'' });
   const [todayActivity, setTodayActivity] = useState({ gym:false, basketball:false, athletic_work:false, skincare:false, reading:false, room_cleaning:false });
 
@@ -165,7 +184,9 @@ export default function App() {
   const [finSign, setFinSign] = useState('+');
   const [finCat, setFinCat] = useState('');
   const [finAmt, setFinAmt] = useState('');
+  const [finCurrency, setFinCurrency] = useState('INR'); // per-entry currency
 
+  // Notes / remark
   const [noteText, setNoteText] = useState('');
   const [remarkText, setRemarkText] = useState('');
   const [todayRemark, setTodayRemark] = useState('');
@@ -175,7 +196,6 @@ export default function App() {
     try {
       const [m, a, e, n, r] = await Promise.all([fetchMetrics(), fetchActivities(), fetchExpenses(), fetchNotes(), fetchRemarks()]);
       setMetrics(m); setActivities(a); setExpenses(e); setNotes(n);
-
       const tm = m.find(x => x.date === TODAY);
       if (tm) {
         const wh=Math.floor(tm.work_hours||0), wm=Math.round(((tm.work_hours||0)-wh)*60);
@@ -210,9 +230,17 @@ export default function App() {
 
   const handleAddExpense = async () => {
     if (!finAmt || !finCat.trim()) return;
-    // Store positive for income (+), negative for expense (-)
-    const amount = finSign === '+' ? parseFloat(finAmt) : -parseFloat(finAmt);
-    await addExpense(TODAY, finCat.trim(), amount);
+    // Always store in INR. If USD entry, convert to INR for storage.
+    let amountINR = parseFloat(finAmt);
+    if (finCurrency === 'USD') amountINR = amountINR * convRate;
+    if (finSign === '-') amountINR = -amountINR;
+
+    // Store original currency info in category field as prefix
+    const catWithCurrency = finCurrency === 'USD'
+      ? `[USD] ${finCat.trim()}`
+      : finCat.trim();
+
+    await addExpense(TODAY, catWithCurrency, amountINR);
     setFinAmt(''); setFinCat('');
     const e = await fetchExpenses(); setExpenses(e);
   };
@@ -241,7 +269,7 @@ export default function App() {
     setRemarkText('');
   };
 
-  // Derived
+  // ── Derived data ─────────────────────────────────────────────────────────────
   const latestWeight = metrics.filter(m => m.weight != null).slice(-1)[0];
   const avgWork  = weeklyAvg(metrics, 'work_hours');
   const avgSleep = weeklyAvg(metrics, 'sleep_hours');
@@ -254,15 +282,22 @@ export default function App() {
   }
   const totalDays = allDates.size;
   const satRate = totalDays > 0 ? Math.round(satCount / totalDays * 100) : 0;
-  const pieData = [{ name:'Satisfactory', value:satCount }, { name:'Other', value:totalDays - satCount }];
+  const pieData = [{ name:'Satisfactory', value:satCount }, { name:'Other', value: Math.max(0, totalDays - satCount) }];
 
   const todaySatisfactory = isSatisfactory(metrics.find(m => m.date === TODAY), activities.find(a => a.date === TODAY));
-
   const todayExpenses = expenses.filter(e => e.date === TODAY);
   const todayNet = todayExpenses.reduce((s, e) => s + Number(e.amount), 0);
 
+  // Finance chart data (net per day in INR)
   const expenseByDate = expenses.reduce((acc, e) => { acc[e.date] = (acc[e.date]||0) + Number(e.amount); return acc; }, {});
   const expenseChartData = Object.entries(expenseByDate).sort().map(([date, value]) => ({ date, value }));
+
+  // Parse USD entries for display
+  function parseExpenseEntry(e) {
+    const isUSD = e.category.startsWith('[USD] ');
+    const displayCat = isUSD ? e.category.replace('[USD] ', '') : e.category;
+    return { ...e, isUSD, displayCat };
+  }
 
   const ACTIVITIES = [
     { key:'gym', label:'Gym' },
@@ -273,24 +308,32 @@ export default function App() {
     { key:'room_cleaning', label:'Room Cleaning' },
   ];
 
+  const accentColor = theme === 'dark' ? '#5a9e6f' : '#3d7a53';
+
   if (loading) return <div className="loading-screen"><div className="loading-dot" /></div>;
 
   return (
     <div className="app">
-      {/* Sidebar */}
+      {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
       <aside className="sidebar">
         <div className="sidebar-brand"><span className="brand-dot" />Personal</div>
         <nav className="sidebar-nav">
           <button className={`nav-item ${sideTab==='dashboard'?'nav-active':''}`} onClick={() => setSideTab('dashboard')}>Dashboard</button>
           <button className={`nav-item ${sideTab==='analytics'?'nav-active':''}`} onClick={() => setSideTab('analytics')}>Analytics</button>
         </nav>
-        <button className="export-btn" onClick={() => exportToCSV(metrics, activities, expenses)}>
-          <Download size={14} /> Export CSV
-        </button>
+        <div className="sidebar-bottom">
+          <button className="theme-btn" onClick={() => setTheme(t => t==='dark'?'light':'dark')}>
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
+          <button className="export-btn" onClick={() => exportToCSV(metrics, activities, expenses)}>
+            <Download size={14} /> Export CSV
+          </button>
+        </div>
       </aside>
 
       <main className="main">
-        {/* ══ DASHBOARD ══════════════════════════════════════════ */}
+        {/* ══ DASHBOARD ════════════════════════════════════════════════════════ */}
         {sideTab === 'dashboard' && (
           <div className="page">
             <div className="page-header">
@@ -305,7 +348,7 @@ export default function App() {
 
             <div className="dash-grid">
 
-              {/* ── Today's Entry (vertical, col 1) ── */}
+              {/* ── Entry card ── */}
               <section className="card entry-card">
                 <div className="card-label">Today's Entry</div>
                 <div className="entry-fields">
@@ -364,7 +407,7 @@ export default function App() {
                 </button>
               </section>
 
-              {/* ── Metrics card (col 2, row 1) ── */}
+              {/* ── Metrics card ── */}
               <section className="card metrics-card">
                 <div className="card-label">Current Metrics</div>
                 <div className="metrics-grid">
@@ -391,7 +434,7 @@ export default function App() {
                 </div>
               </section>
 
-              {/* ── Pie card (col 3, row 1) ── */}
+              {/* ── Pie card ── */}
               <section className="card pie-card">
                 <div className="card-label">Day Quality</div>
                 {totalDays === 0
@@ -399,26 +442,51 @@ export default function App() {
                   : (
                     <div className="pie-wrap">
                       <PieChart width={170} height={170}>
-                        <Pie data={pieData} cx={82} cy={82} innerRadius={54} outerRadius={78} dataKey="value" strokeWidth={0} startAngle={90} endAngle={-270}>
-                          <Cell fill="#5a9e6f" />
-                          <Cell fill="#2a2a2a" />
+                        <Pie data={pieData} cx={82} cy={82} innerRadius={54} outerRadius={78}
+                          dataKey="value" strokeWidth={0} startAngle={90} endAngle={-270}>
+                          <Cell fill={accentColor} />
+                          <Cell fill="var(--pie-empty)" />
                         </Pie>
-                        <text x={83} y={76} textAnchor="middle" dominantBaseline="middle" fontSize="22" fontWeight="600" fill="#5a9e6f" fontFamily="JetBrains Mono, monospace">{satRate}%</text>
-                        <text x={83} y={96} textAnchor="middle" dominantBaseline="middle" fontSize="10" fill="#666" fontFamily="Inter, sans-serif">satisfactory</text>
+                        <text x={83} y={76} textAnchor="middle" dominantBaseline="middle"
+                          fontSize="22" fontWeight="600" fill={accentColor} fontFamily="JetBrains Mono, monospace">
+                          {satRate}%
+                        </text>
+                        <text x={83} y={96} textAnchor="middle" dominantBaseline="middle"
+                          fontSize="10" fill="var(--text-muted)" fontFamily="Inter, sans-serif">
+                          satisfactory
+                        </text>
                       </PieChart>
                       <div className="pie-legend">
-                        <div className="pie-leg-item"><span className="pie-leg-dot" style={{ background:'#5a9e6f' }} />{satCount} days</div>
-                        <div className="pie-leg-item"><span className="pie-leg-dot" style={{ background:'#333' }} />{totalDays - satCount} days</div>
+                        <div className="pie-leg-item">
+                          <span className="pie-leg-dot" style={{ background:accentColor }} />
+                          {satCount} days
+                        </div>
+                        <div className="pie-leg-item">
+                          <span className="pie-leg-dot" style={{ background:'var(--pie-empty)' }} />
+                          {totalDays - satCount} days
+                        </div>
                       </div>
                     </div>
                   )
                 }
               </section>
 
-              {/* ── Finance card (col 2, rows 2-3) ── */}
+              {/* ── Finance card ── */}
               <section className="card finance-card">
                 <div className="card-label">Finance</div>
+
+                {/* Conversion rate */}
+                <div className="conversion-row">
+                  <span className="conversion-label">1 USD =</span>
+                  <input className="conversion-input" type="number" value={convInput}
+                    onChange={e => setConvInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && saveConvRate()} />
+                  <span className="conversion-label" style={{ flex:'none' }}>₹</span>
+                  <button className="conversion-save" onClick={saveConvRate}>Set</button>
+                </div>
+
                 <div className="finance-form">
+                  {/* Row 1: sign + category */}
                   <div className="finance-row">
                     <div className="sign-toggle">
                       <button className={`sign-btn ${finSign==='+'?'sign-active-plus':''}`} onClick={() => setFinSign('+')}>+</button>
@@ -428,8 +496,13 @@ export default function App() {
                       onChange={e => setFinCat(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && handleAddExpense()} />
                   </div>
+                  {/* Row 2: currency + amount + add */}
                   <div className="finance-row">
-                    <input type="number" placeholder="Amount (₹)" value={finAmt}
+                    <div className="currency-toggle">
+                      <button className={`currency-btn ${finCurrency==='INR'?'cur-active':''}`} onClick={() => setFinCurrency('INR')}>₹</button>
+                      <button className={`currency-btn ${finCurrency==='USD'?'cur-active':''}`} onClick={() => setFinCurrency('USD')}>$</button>
+                    </div>
+                    <input type="number" placeholder={finCurrency==='INR'?'Amount (₹)':'Amount ($)'} value={finAmt}
                       onChange={e => setFinAmt(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && handleAddExpense()} />
                     <button className="add-btn" onClick={handleAddExpense}><Plus size={16} /></button>
@@ -439,30 +512,37 @@ export default function App() {
                 <div className="finance-list">
                   {todayExpenses.length === 0
                     ? <div className="empty-state">No entries today</div>
-                    : todayExpenses.map(e => (
-                      <div key={e.id} className="finance-item">
-                        <span className="finance-cat">{e.category}</span>
-                        <span className="finance-date">{e.date}</span>
-                        <span className={Number(e.amount) >= 0 ? 'finance-amt-plus' : 'finance-amt-minus'}>
-                          {Number(e.amount) >= 0 ? '+' : ''}₹{Math.abs(Number(e.amount)).toLocaleString('en-IN')}
-                        </span>
-                        <button className="del-btn" onClick={() => handleDeleteExpense(e.id)}><Trash2 size={12} /></button>
-                      </div>
-                    ))
+                    : todayExpenses.map(e => {
+                      const parsed = parseExpenseEntry(e);
+                      const amt = Number(e.amount);
+                      const displayAmt = parsed.isUSD
+                        ? formatAmount(amt, 'USD', convRate)
+                        : formatAmount(amt, 'INR', convRate);
+                      return (
+                        <div key={e.id} className="finance-item">
+                          <span className="finance-cat">{parsed.displayCat}</span>
+                          {parsed.isUSD && <span className="finance-currency-badge">USD</span>}
+                          <span className={amt >= 0 ? 'finance-amt-plus' : 'finance-amt-minus'}>
+                            {amt >= 0 ? '+' : '−'}{displayAmt}
+                          </span>
+                          <button className="del-btn" onClick={() => handleDeleteExpense(e.id)}><Trash2 size={12} /></button>
+                        </div>
+                      );
+                    })
                   }
                 </div>
 
                 {todayExpenses.length > 0 && (
                   <div className="finance-summary">
-                    <span className="finance-summary-label">Today's Net</span>
+                    <span className="finance-summary-label">Today's Net (₹)</span>
                     <span className={todayNet >= 0 ? 'finance-net-positive' : 'finance-net-negative'}>
-                      {todayNet >= 0 ? '+' : ''}₹{todayNet.toLocaleString('en-IN')}
+                      {todayNet >= 0 ? '+' : ''}₹{Math.abs(todayNet).toLocaleString('en-IN')}
                     </span>
                   </div>
                 )}
               </section>
 
-              {/* ── Notes + Remark card (col 3, rows 2-3) ── */}
+              {/* ── Notes + Remark card ── */}
               <section className="card notes-card">
                 <div className="remark-section">
                   <div className="card-label">Remark of the Day</div>
@@ -500,7 +580,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ══ ANALYTICS ══════════════════════════════════════════ */}
+        {/* ══ ANALYTICS ════════════════════════════════════════════════════════ */}
         {sideTab === 'analytics' && (
           <div className="page">
             <div className="page-header">
@@ -518,20 +598,19 @@ export default function App() {
             {analyticsTab === 'graphs' && (
               <div className="charts-grid">
                 <LineMetricChart title="Weight (kg)"
-                  data={metrics.filter(m => m.weight!=null).map(m => ({ date:m.date, value:m.weight }))}
+                  data={metrics.filter(m=>m.weight!=null).map(m=>({date:m.date,value:m.weight}))}
                   color="#7aaf8e" unit="kg" />
                 <BarMetricChart title="Work Hours"
-                  data={metrics.filter(m => m.work_hours!=null).map(m => ({ date:m.date, value:m.work_hours }))}
+                  data={metrics.filter(m=>m.work_hours!=null).map(m=>({date:m.date,value:m.work_hours}))}
                   color="#7a8faf" formatTick={formatHours} />
                 <BarMetricChart title="Sleep Hours"
-                  data={metrics.filter(m => m.sleep_hours!=null).map(m => ({ date:m.date, value:m.sleep_hours }))}
+                  data={metrics.filter(m=>m.sleep_hours!=null).map(m=>({date:m.date,value:m.sleep_hours}))}
                   color="#9f7aaf" formatTick={formatHours} />
                 <BarMetricChart title="Study Hours"
-                  data={metrics.filter(m => m.study_hours!=null).map(m => ({ date:m.date, value:m.study_hours }))}
+                  data={metrics.filter(m=>m.study_hours!=null).map(m=>({date:m.date,value:m.study_hours}))}
                   color="#af9f7a" formatTick={formatHours} />
                 <LineMetricChart title="Daily Finance Net (₹)"
-                  data={expenseChartData}
-                  color="#af7a7a" unit="₹" />
+                  data={expenseChartData} color="#af7a7a" unit="₹" />
               </div>
             )}
 
