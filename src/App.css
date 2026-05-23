@@ -34,26 +34,26 @@
 
 [data-theme="light"] {
   --bg: #f0ede8;
-  --surface: #faf8f5;
-  --surface2: #ede9e3;
-  --surface3: #e2ddd7;
-  --border: rgba(0,0,0,0.09);
-  --border-hover: rgba(0,0,0,0.2);
+  --surface: #e0dbd3;
+  --surface2: #d6d0c8;
+  --surface3: #ccc6bd;
+  --border: rgba(0,0,0,0.1);
+  --border-hover: rgba(0,0,0,0.22);
   --text: #1e1c1a;
-  --text-sub: #6b6560;
-  --text-muted: #9e9892;
+  --text-sub: #5c5750;
+  --text-muted: #8a8278;
   --accent: #3d7a53;
-  --accent-dim: rgba(61,122,83,0.12);
-  --accent-border: rgba(61,122,83,0.35);
+  --accent-dim: rgba(61,122,83,0.14);
+  --accent-border: rgba(61,122,83,0.38);
   --loss: #a84848;
-  --loss-dim: rgba(168,72,72,0.12);
-  --input-bg: #edeae4;
-  --scrollbar: #d8d3cc;
-  --tooltip-bg: #faf8f5;
-  --chart-grid: rgba(0,0,0,0.06);
-  --chart-axis: rgba(0,0,0,0.15);
-  --chart-tick: #9e9892;
-  --pie-empty: #ddd8d0;
+  --loss-dim: rgba(168,72,72,0.14);
+  --input-bg: #ccc6bd;
+  --scrollbar: #bdb7ae;
+  --tooltip-bg: #e0dbd3;
+  --chart-grid: rgba(0,0,0,0.07);
+  --chart-axis: rgba(0,0,0,0.18);
+  --chart-tick: #8a8278;
+  --pie-empty: #c8c2b9;
 }
 
 /* ── Reset ───────────────────────────────────────────────── */
