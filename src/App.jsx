@@ -600,6 +600,8 @@ export default function App() {
                 <LineMetricChart title="Weight (kg)"
                   data={metrics.filter(m=>m.weight!=null).map(m=>({date:m.date,value:m.weight}))}
                   color="#7aaf8e" unit="kg" />
+                <LineMetricChart title="Daily Finance Net (₹)"
+                  data={expenseChartData} color="#af7a7a" unit="₹" />
                 <BarMetricChart title="Work Hours"
                   data={metrics.filter(m=>m.work_hours!=null).map(m=>({date:m.date,value:m.work_hours}))}
                   color="#7a8faf" formatTick={formatHours} />
@@ -609,8 +611,6 @@ export default function App() {
                 <BarMetricChart title="Study Hours"
                   data={metrics.filter(m=>m.study_hours!=null).map(m=>({date:m.date,value:m.study_hours}))}
                   color="#af9f7a" formatTick={formatHours} />
-                <LineMetricChart title="Daily Finance Net (₹)"
-                  data={expenseChartData} color="#af7a7a" unit="₹" />
               </div>
             )}
 
