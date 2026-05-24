@@ -50,13 +50,15 @@ function weeklyAvg(entries, field) {
   return recent.reduce((s, e) => s + parseFloat(e[field]), 0) / recent.length;
 }
 
+function fmt2(n) { return parseFloat(n.toFixed(2)); }
+
 function formatAmount(amount, currency, rate) {
   const abs = Math.abs(amount);
   if (currency === 'USD') {
     const usd = abs / rate;
-    return `$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `$${usd.toFixed(2)}`;
   }
-  return `₹${abs.toLocaleString('en-IN')}`;
+  return `₹${abs.toFixed(2)}`;
 }
 
 // ── Custom line dot ───────────────────────────────────────────────────────────
@@ -286,11 +288,12 @@ export default function App() {
 
   const todaySatisfactory = isSatisfactory(metrics.find(m => m.date === TODAY), activities.find(a => a.date === TODAY));
   const todayExpenses = expenses.filter(e => e.date === TODAY);
-  const todayNet = todayExpenses.reduce((s, e) => s + Number(e.amount), 0);
+  const todayNet = fmt2(todayExpenses.reduce((s, e) => s + Number(e.amount), 0));
+  const allTimeNet = fmt2(expenses.reduce((s, e) => s + Number(e.amount), 0));
 
   // Finance chart data (net per day in INR)
   const expenseByDate = expenses.reduce((acc, e) => { acc[e.date] = (acc[e.date]||0) + Number(e.amount); return acc; }, {});
-  const expenseChartData = Object.entries(expenseByDate).sort().map(([date, value]) => ({ date, value }));
+  const expenseChartData = Object.entries(expenseByDate).sort().map(([date, value]) => ({ date, value: fmt2(value) }));
 
   // Parse USD entries for display
   function parseExpenseEntry(e) {
@@ -532,14 +535,20 @@ export default function App() {
                   }
                 </div>
 
-                {todayExpenses.length > 0 && (
-                  <div className="finance-summary">
-                    <span className="finance-summary-label">Today's Net (₹)</span>
+                <div className="finance-summary" style={{borderTop:'1px solid var(--border)', paddingTop:'0.85rem', marginTop:'0.25rem'}}>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px'}}>
+                    <span className="finance-summary-label">Today's Net</span>
                     <span className={todayNet >= 0 ? 'finance-net-positive' : 'finance-net-negative'}>
-                      {todayNet >= 0 ? '+' : ''}₹{Math.abs(todayNet).toLocaleString('en-IN')}
+                      {todayNet >= 0 ? '+' : ''}₹{Math.abs(todayNet).toFixed(2)}
                     </span>
                   </div>
-                )}
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                    <span className="finance-summary-label">All-Time Net</span>
+                    <span className={allTimeNet >= 0 ? 'finance-net-positive' : 'finance-net-negative'}>
+                      {allTimeNet >= 0 ? '+' : ''}₹{Math.abs(allTimeNet).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
               </section>
 
               {/* ── Notes + Remark card ── */}
