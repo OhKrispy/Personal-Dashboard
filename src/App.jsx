@@ -6,9 +6,9 @@ import {
 } from 'recharts';
 import { Download, Plus, Trash2, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import {
-  fetchMetrics, fetchActivities, fetchExpenses, fetchNotes, fetchRemarks,
+  fetchMetrics, fetchActivities, fetchExpenses, fetchRemarks,
   upsertMetric, upsertActivity, addExpense, deleteExpense,
-  addNote, deleteNote, upsertRemark, exportToCSV,
+  upsertRemark, exportToCSV,
   fetchCalories, addCalorie, deleteCalorie
 } from './lib/supabase';
 import './App.css';
@@ -176,7 +176,6 @@ export default function App() {
   const [metrics, setMetrics] = useState([]);
   const [activities, setActivities] = useState([]);
   const [expenses, setExpenses] = useState([]);
-  const [notes, setNotes] = useState([]);
   const [calories, setCalories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -192,9 +191,6 @@ export default function App() {
   const [finCurrency, setFinCurrency] = useState('INR'); // per-entry currency
 
   // Notes / remark
-  const [noteText, setNoteText] = useState('');
-  const [remarkText, setRemarkText] = useState('');
-  const [todayRemark, setTodayRemark] = useState('');
 
   // Calorie form
   const [calItem, setCalItem] = useState('');
@@ -203,8 +199,10 @@ export default function App() {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [m, a, e, n, r, cal] = await Promise.all([fetchMetrics(), fetchActivities(), fetchExpenses(), fetchNotes(), fetchRemarks(), fetchCalories()]);
-      setMetrics(m); setActivities(a); setExpenses(e); setNotes(n); setCalories(cal);
+      const [m, a, e, r] = await Promise.all([fetchMetrics(), fetchActivities(), fetchExpenses(), fetchRemarks()]);
+      setMetrics(m); setActivities(a); setExpenses(e);
+      // fetchCalories is isolated so a missing table never breaks the rest of the app
+      try { const cal = await fetchCalories(); setCalories(cal); } catch(_) {}
       const tm = m.find(x => x.date === TODAY);
       if (tm) {
         const wh=Math.floor(tm.work_hours||0), wm=Math.round(((tm.work_hours||0)-wh)*60);
@@ -214,8 +212,7 @@ export default function App() {
       }
       const ta = a.find(x => x.date === TODAY);
       if (ta) setTodayActivity({ gym:ta.gym, basketball:ta.basketball, athletic_work:ta.athletic_work, skincare:ta.skincare, reading:ta.reading, room_cleaning:ta.room_cleaning||false });
-      const tr = r.find(x => x.date === TODAY);
-      if (tr) setTodayRemark(tr.text);
+
     } catch(err) { console.error(err); }
     setLoading(false);
   }, []);
@@ -257,25 +254,6 @@ export default function App() {
   const handleDeleteExpense = async (id) => {
     await deleteExpense(id);
     setExpenses(prev => prev.filter(e => e.id !== id));
-  };
-
-  const handleAddNote = async () => {
-    if (!noteText.trim()) return;
-    await addNote(TODAY, noteText.trim());
-    setNoteText('');
-    const n = await fetchNotes(); setNotes(n);
-  };
-
-  const handleDeleteNote = async (id) => {
-    await deleteNote(id);
-    setNotes(prev => prev.filter(n => n.id !== id));
-  };
-
-  const handleSaveRemark = async () => {
-    if (!remarkText.trim()) return;
-    await upsertRemark(TODAY, remarkText.trim());
-    setTodayRemark(remarkText.trim());
-    setRemarkText('');
   };
 
   const handleAddCalorie = async () => {
@@ -580,40 +558,6 @@ export default function App() {
                 </div>
               </section>
 
-              {/* ── Notes + Remark card ── */}
-              <section className="card notes-card">
-                <div className="remark-section">
-                  <div className="card-label">Remark of the Day</div>
-                  {todayRemark && <p className="remark-display">"{todayRemark}"</p>}
-                  <div className="remark-form">
-                    <input type="text" placeholder={todayRemark ? 'Update remark…' : "Today's remark…"}
-                      value={remarkText} onChange={e => setRemarkText(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleSaveRemark()} />
-                    <button className="icon-btn" onClick={handleSaveRemark}><Plus size={16} /></button>
-                  </div>
-                </div>
-
-                <div className="card-label">Notes</div>
-                <div className="note-form">
-                  <input type="text" placeholder="Add a note…" value={noteText}
-                    onChange={e => setNoteText(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleAddNote()} />
-                  <button className="icon-btn" onClick={handleAddNote}><Plus size={16} /></button>
-                </div>
-                <div className="notes-list">
-                  {notes.length === 0 && <div className="empty-state">No notes yet</div>}
-                  {notes.slice(0, 12).map(n => (
-                    <div key={n.id} className="note-item">
-                      <div className="note-content">
-                        <span className="note-text">{n.text}</span>
-                        <span className="note-date">{n.date}</span>
-                      </div>
-                      <button className="del-btn" onClick={() => handleDeleteNote(n.id)}><Trash2 size={12} /></button>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
               {/* ── Calorie card ── */}
               <section className="card calorie-card">
                 <div className="card-label">Calories</div>
@@ -646,18 +590,16 @@ export default function App() {
                   }
                 </div>
 
-                {(todayCalories.length > 0 || allTimeCalAvg > 0) && (
-                  <div className="finance-summary" style={{borderTop:'1px solid var(--border)', paddingTop:'0.85rem', marginTop:'0.25rem'}}>
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px'}}>
-                      <span className="finance-summary-label">Today's Total</span>
-                      <span className="finance-amt-plus">{Math.round(todayCalTotal)} kcal</span>
-                    </div>
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                      <span className="finance-summary-label">Daily Average</span>
-                      <span style={{fontFamily:'var(--mono)', fontSize:'15px', fontWeight:'600', color:'var(--text-sub)'}}>{allTimeCalAvg} kcal</span>
-                    </div>
+                <div className="finance-summary" style={{borderTop:'1px solid var(--border)', paddingTop:'0.85rem', marginTop:'0.25rem'}}>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px'}}>
+                    <span className="finance-summary-label">Today's Total</span>
+                    <span className="finance-amt-plus">{Math.round(todayCalTotal)} kcal</span>
                   </div>
-                )}
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                    <span className="finance-summary-label">Daily Average</span>
+                    <span style={{fontFamily:'var(--mono)', fontSize:'15px', fontWeight:'600', color:'var(--text-sub)'}}>{allTimeCalAvg} kcal</span>
+                  </div>
+                </div>
               </section>
 
             </div>

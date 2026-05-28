@@ -230,12 +230,11 @@ html, body, #root {
   margin-bottom: 1rem;
 }
 
-.entry-card    { grid-column:1; grid-row:1/5; }
+.entry-card    { grid-column:1; grid-row:1/4; }
 .metrics-card  { grid-column:2; grid-row:1; align-self:stretch; }
-.pie-card      { grid-column:3; grid-row:1/3; }
-.finance-card  { grid-column:2; grid-row:2/5; }
-.notes-card    { grid-column:3; grid-row:3/4; }
-.calorie-card  { grid-column:3; grid-row:4/5; }
+.pie-card      { grid-column:3; grid-row:1/2; }
+.finance-card  { grid-column:2; grid-row:2/4; }
+.calorie-card  { grid-column:3; grid-row:2/4; }
 
 /* ── Entry card ──────────────────────────────────────────── */
 .entry-fields { display:flex; flex-direction:column; gap:0.85rem; margin-bottom:1.1rem; }
@@ -490,37 +489,7 @@ html, body, #root {
 .finance-net-negative { font-family:var(--mono); font-size:15px; font-weight:600; color:var(--loss); }
 
 /* ── Notes + Remark ──────────────────────────────────────── */
-.remark-section { margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid var(--border); }
-.remark-display { font-size:13px; font-weight:400; color:var(--text-sub); line-height:1.55; margin-bottom:0.75rem; font-style:italic; }
 
-.remark-form, .note-form { display:flex; gap:7px; }
-.remark-form input, .note-form input {
-  flex:1;
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.52rem 0.7rem;
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.15s, background 0.2s;
-}
-.remark-form input:focus, .note-form input:focus { border-color:var(--border-hover); }
-
-.notes-list {
-  display: flex;
-  flex-direction: column;
-  margin-top: 0.75rem;
-  max-height: 280px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar) transparent;
-}
-.note-item { display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); }
-.note-content { flex:1; min-width:0; }
-.note-text { display:block; font-size:13px; font-weight:400; color:var(--text); line-height:1.45; word-break:break-word; }
-.note-date { font-size:11px; color:var(--text-muted); margin-top:2px; display:block; }
 
 /* ── Shared buttons ──────────────────────────────────────── */
 .icon-btn {
@@ -607,6 +576,6 @@ html, body, #root {
   .main { height:calc(100vh - 56px); }
   .page { padding:1.25rem 1rem; }
   .dash-grid { grid-template-columns:1fr; grid-template-rows:auto; }
-  .entry-card,.metrics-card,.pie-card,.finance-card,.notes-card,.calorie-card { grid-column:1; grid-row:auto; }
+  .entry-card,.metrics-card,.pie-card,.finance-card,.calorie-card { grid-column:1; grid-row:auto; }
   .charts-grid { grid-template-columns:1fr; }
 }
