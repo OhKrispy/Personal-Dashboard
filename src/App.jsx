@@ -8,7 +8,8 @@ import { Download, Plus, Trash2, ChevronLeft, ChevronRight, Sun, Moon } from 'lu
 import {
   fetchMetrics, fetchActivities, fetchExpenses, fetchNotes, fetchRemarks,
   upsertMetric, upsertActivity, addExpense, deleteExpense,
-  addNote, deleteNote, upsertRemark, exportToCSV
+  addNote, deleteNote, upsertRemark, exportToCSV,
+  fetchCalories, addCalorie, deleteCalorie
 } from './lib/supabase';
 import './App.css';
 
@@ -45,7 +46,8 @@ function weeklyAvg(entries, field) {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 6);
   const co = cutoff.toISOString().split('T')[0];
-  const recent = entries.filter(e => e.date >= co && e[field] != null);
+  // Exclude null AND zero values so non-logged days don't drag the average down
+  const recent = entries.filter(e => e.date >= co && e[field] != null && parseFloat(e[field]) > 0);
   if (!recent.length) return null;
   return recent.reduce((s, e) => s + parseFloat(e[field]), 0) / recent.length;
 }
@@ -175,6 +177,7 @@ export default function App() {
   const [activities, setActivities] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [notes, setNotes] = useState([]);
+  const [calories, setCalories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -193,11 +196,15 @@ export default function App() {
   const [remarkText, setRemarkText] = useState('');
   const [todayRemark, setTodayRemark] = useState('');
 
+  // Calorie form
+  const [calItem, setCalItem] = useState('');
+  const [calAmt, setCalAmt] = useState('');
+
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [m, a, e, n, r] = await Promise.all([fetchMetrics(), fetchActivities(), fetchExpenses(), fetchNotes(), fetchRemarks()]);
-      setMetrics(m); setActivities(a); setExpenses(e); setNotes(n);
+      const [m, a, e, n, r, cal] = await Promise.all([fetchMetrics(), fetchActivities(), fetchExpenses(), fetchNotes(), fetchRemarks(), fetchCalories()]);
+      setMetrics(m); setActivities(a); setExpenses(e); setNotes(n); setCalories(cal);
       const tm = m.find(x => x.date === TODAY);
       if (tm) {
         const wh=Math.floor(tm.work_hours||0), wm=Math.round(((tm.work_hours||0)-wh)*60);
@@ -271,6 +278,18 @@ export default function App() {
     setRemarkText('');
   };
 
+  const handleAddCalorie = async () => {
+    if (!calAmt || !calItem.trim()) return;
+    await addCalorie(TODAY, calItem.trim(), parseFloat(calAmt));
+    setCalItem(''); setCalAmt('');
+    const cal = await fetchCalories(); setCalories(cal);
+  };
+
+  const handleDeleteCalorie = async (id) => {
+    await deleteCalorie(id);
+    setCalories(prev => prev.filter(c => c.id !== id));
+  };
+
   // ── Derived data ─────────────────────────────────────────────────────────────
   const latestWeight = metrics.filter(m => m.weight != null).slice(-1)[0];
   const avgWork  = weeklyAvg(metrics, 'work_hours');
@@ -294,6 +313,16 @@ export default function App() {
   // Finance chart data (net per day in INR)
   const expenseByDate = expenses.reduce((acc, e) => { acc[e.date] = (acc[e.date]||0) + Number(e.amount); return acc; }, {});
   const expenseChartData = Object.entries(expenseByDate).sort().map(([date, value]) => ({ date, value: fmt2(value) }));
+
+  // Calorie derived
+  const todayCalories = calories.filter(c => c.date === TODAY);
+  const todayCalTotal = todayCalories.reduce((s, c) => s + Number(c.amount), 0);
+  const calByDate = calories.reduce((acc, c) => { acc[c.date] = (acc[c.date]||0) + Number(c.amount); return acc; }, {});
+  const calChartData = Object.entries(calByDate).sort().map(([date, value]) => ({ date, value: Math.round(value) }));
+  const calDates = Object.keys(calByDate);
+  const allTimeCalAvg = calDates.length > 0
+    ? Math.round(Object.values(calByDate).reduce((s, v) => s + v, 0) / calDates.length)
+    : 0;
 
   // Parse USD entries for display
   function parseExpenseEntry(e) {
@@ -585,6 +614,52 @@ export default function App() {
                 </div>
               </section>
 
+              {/* ── Calorie card ── */}
+              <section className="card calorie-card">
+                <div className="card-label">Calories</div>
+                <div className="finance-form">
+                  <div className="finance-row">
+                    <input type="text" placeholder="Food item…" value={calItem}
+                      onChange={e => setCalItem(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleAddCalorie()}
+                      style={{flex:1}} />
+                  </div>
+                  <div className="finance-row">
+                    <input type="number" placeholder="Calories (kcal)" value={calAmt}
+                      onChange={e => setCalAmt(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleAddCalorie()}
+                      style={{flex:1, fontFamily:'var(--mono)'}} />
+                    <button className="add-btn" onClick={handleAddCalorie}><Plus size={16} /></button>
+                  </div>
+                </div>
+
+                <div className="finance-list">
+                  {todayCalories.length === 0
+                    ? <div className="empty-state">No entries today</div>
+                    : todayCalories.map(c => (
+                      <div key={c.id} className="finance-item">
+                        <span className="finance-cat">{c.item}</span>
+                        <span className="finance-amt-plus">{Math.round(Number(c.amount))} kcal</span>
+                        <button className="del-btn" onClick={() => handleDeleteCalorie(c.id)}><Trash2 size={12} /></button>
+                      </div>
+                    ))
+                  }
+                </div>
+
+                {(todayCalories.length > 0 || allTimeCalAvg > 0) && (
+                  <div className="finance-summary" style={{borderTop:'1px solid var(--border)', paddingTop:'0.85rem', marginTop:'0.25rem'}}>
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px'}}>
+                      <span className="finance-summary-label">Today's Total</span>
+                      <span className="finance-amt-plus">{Math.round(todayCalTotal)} kcal</span>
+                    </div>
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                      <span className="finance-summary-label">Daily Average</span>
+                      <span style={{fontFamily:'var(--mono)', fontSize:'15px', fontWeight:'600', color:'var(--text-sub)'}}>{allTimeCalAvg} kcal</span>
+                    </div>
+                  </div>
+                )}
+              </section>
+
             </div>
           </div>
         )}
@@ -620,6 +695,8 @@ export default function App() {
                 <BarMetricChart title="Study Hours"
                   data={metrics.filter(m=>m.study_hours!=null).map(m=>({date:m.date,value:m.study_hours}))}
                   color="#af9f7a" formatTick={formatHours} />
+                <BarMetricChart title="Daily Calories (kcal)"
+                  data={calChartData} color="#af8f6a" />
               </div>
             )}
 

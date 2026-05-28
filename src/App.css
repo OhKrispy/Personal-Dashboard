@@ -230,11 +230,12 @@ html, body, #root {
   margin-bottom: 1rem;
 }
 
-.entry-card    { grid-column:1; grid-row:1/4; }
+.entry-card    { grid-column:1; grid-row:1/5; }
 .metrics-card  { grid-column:2; grid-row:1; align-self:stretch; }
 .pie-card      { grid-column:3; grid-row:1/3; }
-.finance-card  { grid-column:2; grid-row:2/4; }
+.finance-card  { grid-column:2; grid-row:2/5; }
 .notes-card    { grid-column:3; grid-row:3/4; }
+.calorie-card  { grid-column:3; grid-row:4/5; }
 
 /* ── Entry card ──────────────────────────────────────────── */
 .entry-fields { display:flex; flex-direction:column; gap:0.85rem; margin-bottom:1.1rem; }
@@ -606,6 +607,6 @@ html, body, #root {
   .main { height:calc(100vh - 56px); }
   .page { padding:1.25rem 1rem; }
   .dash-grid { grid-template-columns:1fr; grid-template-rows:auto; }
-  .entry-card,.metrics-card,.pie-card,.finance-card,.notes-card { grid-column:1; grid-row:auto; }
+  .entry-card,.metrics-card,.pie-card,.finance-card,.notes-card,.calorie-card { grid-column:1; grid-row:auto; }
   .charts-grid { grid-template-columns:1fr; }
 }

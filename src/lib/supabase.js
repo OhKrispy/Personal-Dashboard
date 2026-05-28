@@ -166,3 +166,27 @@ export function exportToCSV(metrics, activities, expenses) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ── Calories ──────────────────────────────────────────────────────────────────
+export async function addCalorie(date, item, amount) {
+  const { data, error } = await supabase
+    .from('calories')
+    .insert({ date, item, amount })
+    .select();
+  if (error) throw error;
+  return data[0];
+}
+
+export async function deleteCalorie(id) {
+  const { error } = await supabase.from('calories').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function fetchCalories() {
+  const { data, error } = await supabase
+    .from('calories')
+    .select('*')
+    .order('date', { ascending: true });
+  if (error) throw error;
+  return data;
+}

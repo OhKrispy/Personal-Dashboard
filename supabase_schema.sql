@@ -64,3 +64,15 @@ create policy "Allow all" on expenses for all using (true) with check (true);
 create policy "Allow all" on activities for all using (true) with check (true);
 create policy "Allow all" on notes for all using (true) with check (true);
 create policy "Allow all" on remarks for all using (true) with check (true);
+
+-- Calories table (run this if adding calorie tracker to existing setup)
+create table if not exists calories (
+  id uuid default gen_random_uuid() primary key,
+  date date not null,
+  item text not null,
+  amount numeric not null,
+  created_at timestamp with time zone default now()
+);
+
+alter table calories enable row level security;
+create policy "Allow all" on calories for all using (true) with check (true);
